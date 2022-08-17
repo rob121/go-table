@@ -14,7 +14,7 @@ import (
 
 
 
-var funcMap = template.FuncMap {
+var FuncMap = template.FuncMap {
  "title": strings.Title,
  "keyexist": func(cols map[string]Column,key string) (bool){
 
@@ -151,11 +151,11 @@ func (t *Table) Render() (string,error){
 	if(t.Template!=nil) {
 
 		tmpl = t.Template
-		tmpl = tmpl.Funcs(funcMap) //add in built in funcs
+	
 
 	}else{
 
-	    tmpl, err = template.New("table").Funcs(funcMap).Parse(final_template)
+	    tmpl, err = template.New("table").Funcs(FuncMap).Parse(final_template)
 
 	}
 
@@ -164,7 +164,7 @@ func (t *Table) Render() (string,error){
 		return "",err
 	}
 
-    var w bytes.Buffer
+        var w bytes.Buffer
 	err2 := tmpl.Execute(&w,t)
 
 	if(err2!=nil){
