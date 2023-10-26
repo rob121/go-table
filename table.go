@@ -9,74 +9,74 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
+var FuncMap = template.FuncMap{
+	"title": strings.Title,
+	"keyexist": func(cols map[string]Column, key string) bool {
 
+		if _, ok := cols[key]; ok {
+			return true
+		}
+		return false
 
-var FuncMap = template.FuncMap {
- "title": strings.Title,
- "keyexist": func(cols map[string]Column,key string) (bool){
+	},
+	"tomap": func(from interface{}) map[string]interface{} {
 
- 	if _, ok := cols[key]; ok {
- 		return true
-	}
-	return false
+		out := structs.Map(from)
+		return out
+	},
+	"parse": func(key string, cols []Column, row map[string]interface{}) template.HTML {
 
- },
- "tomap": func(from interface{}) (map[string]interface{}){
+		rowtmpl := fmt.Sprintf("{{.%s}}", key)
 
-    out := structs.Map(from)
-    return out
- },
-  "parse": func(key string, cols []Column, row map[string]interface{}) (template.HTML) {
+		if val, ok := GetColumnFromKey(cols, key); ok {
 
-       rowtmpl := fmt.Sprintf("{{.%s}}",key)
+			if len(val.Template) > 0 {
 
-       if val,ok := GetColumnFromKey(cols,key); ok {
+				rowtmpl = val.Template
 
-       	  if(len(val.Template)>0){
+			}
 
-             rowtmpl = val.Template
+			if val.Callback != nil {
 
-       	  }
+				return val.Callback(row)
 
-       	  if(val.Callback != nil){
+			}
 
-       	  	return val.Callback(row)
+		}
 
-		  }
+		tmpl, err := template.New("col").Parse(rowtmpl)
 
-	   }
+		if err != nil {
+			return template.HTML(err.Error())
+		}
 
-	  tmpl, err := template.New("col").Parse(rowtmpl)
+		var w bytes.Buffer
+		err2 := tmpl.Execute(&w, row)
 
-	  if(err!=nil){
-		  return template.HTML(err.Error())
-	  }
+		if err2 != nil {
 
-	  var w bytes.Buffer
-	  err2 := tmpl.Execute(&w,row)
+			return template.HTML(err2.Error())
+		}
 
-	  if(err2!=nil){
+		return template.HTML(w.String())
 
-		  return template.HTML(err2.Error())
-	  }
-
-	  return template.HTML(w.String())
-
-  },
- }
+	},
+}
 
 type Table struct {
-	Template *template.Template
-	Class string
-	Columns []Column
-	Data interface{}
+	Template     *template.Template
+	Class        string
+	Columns      []Column
+	Builder      *QueryBuilder
+	Data         interface{}
 	DataRendered string
-	Paginator *Paginator
-	Url string
-	Request *http.Request
+	Paginator    *Paginator
+	Url          string
+	Request      *http.Request
 }
 
 func New() *Table {
@@ -88,111 +88,154 @@ func New() *Table {
 }
 
 type Column struct {
-	ID string
-	Label string
+	ID       string
+	Label    string
 	Template string
-	Callback func (interface{}) template.HTML
+	Callback func(interface{}) template.HTML
 	Ordering string
 }
 
+// Query Builder
+func (t *Table) QueryBuilder(columns []string, table string) *QueryBuilder {
 
-func (t *Table) SetRequest(r *http.Request){
+	t.Builder = &QueryBuilder{Columns: columns, Table: table}
+
+	pg, _ := strconv.Atoi(t.Request.URL.Query().Get("page"))
+	perpage, _ := strconv.Atoi(t.Request.URL.Query().Get("perpage"))
+
+	if perpage < 1 {
+		perpage = 25
+	}
+
+	if pg > 1 {
+		t.Builder.Start = pg * perpage
+	} else {
+		t.Builder.Start = 0
+	}
+
+	t.Builder.Limit = perpage
+
+	return t.Builder
+
+}
+
+func (t *Table) SetRequest(r *http.Request) {
 
 	t.Request = r
 	t.SetUrl(t.Request.URL.String())
 
 }
 
-func(t *Table) SetUrl(u string) {
+func (t *Table) SetUrl(u string) {
 
 	t.Url = u
 
 }
 
-func(c Column) Render() (template.HTML) {
+func (c Column) Render() template.HTML {
 
-	if len(c.Ordering)>0 {
+	if len(c.Ordering) > 0 {
 
-		stat := QueryKey(c.Ordering,"order")
+		stat := QueryKey(c.Ordering, "order")
 
 		var ud string
 
 		switch stat {
-		 case "DESC":
-		    ud = "up"
-		 case "ASC":
-		 	ud = "down"
+		case "DESC":
+			ud = "up"
+		case "ASC":
+			ud = "down"
 		}
 
-		return template.HTML(fmt.Sprintf(`<a class="sorting" href="%s" ><i class="fa fa-angle-%s" ></i>&nbsp;%s</a>`,c.Ordering,ud, c.Label))
+		return template.HTML(fmt.Sprintf(`<a class="sorting" href="%s" ><i class="fa fa-angle-%s" ></i>&nbsp;%s</a>`, c.Ordering, ud, c.Label))
 	}
 
-	return template.HTML(fmt.Sprintf("%s",c.Label))
+	return template.HTML(fmt.Sprintf("%s", c.Label))
 
 }
 
+func (t *Table) SetPaginator(total int, perpage_current ...int) *Paginator {
 
+	var perpage int
+	var current int
 
-func (t *Table) SetPaginator(total int, perpage int,current int) (*Paginator){
+	if len(perpage_current) > 1 {
+		perpage = perpage_current[0]
+		current = perpage_current[1]
+	}
 
-    t.Paginator = &Paginator{Total: total,Perpage: perpage,Current: current}
-    t.Paginator.SetUrl(t.Url)
+	if t.Request != nil {
+		pg, _ := strconv.Atoi(t.Request.URL.Query().Get("page"))
+		ppg, _ := strconv.Atoi(t.Request.URL.Query().Get("perpage"))
+		perpage = ppg
+		current = pg
+	}
 
-    return t.Paginator
+	if perpage < 1 {
+		perpage = 25
+	}
+
+	if current < 1 {
+		current = 1
+	}
+
+	t.Paginator = &Paginator{Total: total, Perpage: perpage, Current: current}
+	t.Paginator.SetUrl(t.Url)
+
+	return t.Paginator
 
 }
 
-func (t *Table) Render() (string,error){
+func (t *Table) Render() (string, error) {
 
 	final_template := default_template
-    var err error
+	var err error
 	var tmpl *template.Template
 
-	if(t.Template!=nil) {
+	if t.Template != nil {
 
 		tmpl = t.Template
-	
 
-	}else{
+	} else {
 
-	    tmpl, err = template.New("table").Funcs(FuncMap).Parse(final_template)
+		tmpl, err = template.New("table").Funcs(FuncMap).Parse(final_template)
 
 	}
 
-	if(err!=nil){
+	if err != nil {
 
-		return "",err
+		return "", err
 	}
 
-        var w bytes.Buffer
-	err2 := tmpl.Execute(&w,t)
+	var w bytes.Buffer
+	err2 := tmpl.Execute(&w, t)
 
-	if(err2!=nil){
+	if err2 != nil {
 
-		return "",err2
+		return "", err2
 	}
 
-	return w.String(),nil
+	return w.String(), nil
 
 }
 
-func (t *Table) AddColumn(name string,id string,templ interface{},order ...bool) (*Table){
+func (t *Table) AddColumn(name string, id string, templ interface{}, order ...bool) *Table {
 
 	ordering := ""
 
-	if( len(order)>0 ){
+	if len(order) > 0 {
 
-		key := QueryKey(t.Url,"order")
+		key := QueryKey(t.Url, "order")
 
-		if(key=="DESC"){
+		if key == "DESC" {
 
 			key = "ASC"
-		}else {
+		} else {
 			key = "DESC"
 		}
 
-		ordering = UpdateUrl(t.Url,"order",key)
-		ordering = UpdateUrl(ordering,"order.column",ToSnakeCase(id))
+		ordering = UpdateUrl(t.Url, "order", key)
+		ordering = UpdateUrl(ordering, "order.column", ToSnakeCase(id))
 
 	}
 
@@ -200,7 +243,7 @@ func (t *Table) AddColumn(name string,id string,templ interface{},order ...bool)
 
 	if reflect.TypeOf(templ).Kind() == reflect.Func {
 
-		tempcol = Column{ID: id,Label: name,  Ordering: ordering, Callback: templ.(func (interface{}) (template.HTML)) }
+		tempcol = Column{ID: id, Label: name, Ordering: ordering, Callback: templ.(func(interface{}) template.HTML)}
 
 	}
 
@@ -208,16 +251,14 @@ func (t *Table) AddColumn(name string,id string,templ interface{},order ...bool)
 
 	if reflect.TypeOf(templ) == strType {
 
-		tempcol = Column{ID: id, Label: name,  Ordering: ordering, Template: templ.(string)}
+		tempcol = Column{ID: id, Label: name, Ordering: ordering, Template: templ.(string)}
 
 	}
 
-	t.Columns = append(t.Columns,tempcol)
+	t.Columns = append(t.Columns, tempcol)
 
 	return t
 }
-
-
 
 func ToSnakeCase(camel string) (snake string) {
 	var b strings.Builder
@@ -234,9 +275,9 @@ func ToSnakeCase(camel string) (snake string) {
 		// add underscore if last letter is capital letter
 		// add underscore when previous letter is lowercase
 		// add underscore when next letter is lowercase
-		if (i != 0 || i == l-1) && ( // head and tail
-			(i > 0 && rune(camel[i-1]) >= 'a') || // pre
-				(i < l-1 && rune(camel[i+1]) >= 'a')) { //next
+		if (i != 0 || i == l-1) && (          // head and tail
+		(i > 0 && rune(camel[i-1]) >= 'a') || // pre
+			(i < l-1 && rune(camel[i+1]) >= 'a')) { //next
 			b.WriteRune('_')
 		}
 		b.WriteRune(v + diff)
@@ -244,13 +285,13 @@ func ToSnakeCase(camel string) (snake string) {
 	return b.String()
 }
 
-func ToInterface(input interface{},output interface{}) (error){
+func ToInterface(input interface{}, output interface{}) error {
 
-	return mapstructure.Decode(input,output)
+	return mapstructure.Decode(input, output)
 
 }
 
-func UpdateUrl(urlraw string,key string, val string) (string){
+func UpdateUrl(urlraw string, key string, val string) string {
 
 	urlA, err := url.Parse(urlraw)
 
@@ -268,22 +309,22 @@ func UpdateUrl(urlraw string,key string, val string) (string){
 
 }
 
-func GetColumnFromKey(c []Column,key string)(Column,bool){
+func GetColumnFromKey(c []Column, key string) (Column, bool) {
 
-	for _,v := range c {
+	for _, v := range c {
 
-		if(v.ID==key){
+		if v.ID == key {
 
-			return v,true
+			return v, true
 
 		}
 
 	}
 
-	return Column{},false
+	return Column{}, false
 }
 
-func QueryKey(urlraw string,key string) (string){
+func QueryKey(urlraw string, key string) string {
 
 	urlA, err := url.Parse(urlraw)
 
