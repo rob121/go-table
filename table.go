@@ -76,6 +76,7 @@ type Table struct {
 	Template     *template.Template
 	Class        string
 	Columns      []Column
+	Opts         *Opts
 	Builder      *QueryBuilder
 	Data         interface{}
 	DataRendered string
@@ -84,9 +85,19 @@ type Table struct {
 	Request      *http.Request
 }
 
-func New() *Table {
+type Opts struct {
+	HideHeader bool
+}
+
+func New(opts ...Opts) *Table {
 
 	t := new(Table)
+
+	if len(opts) > 0 {
+		t.Opts = &opts[0]
+	} else {
+		t.Opts = new(Opts)
+	}
 
 	return t
 
@@ -297,9 +308,9 @@ func ToSnakeCase(camel string) (snake string) {
 		// add underscore if last letter is capital letter
 		// add underscore when previous letter is lowercase
 		// add underscore when next letter is lowercase
-		if (i != 0 || i == l-1) && (          // head and tail
-		(i > 0 && rune(camel[i-1]) >= 'a') || // pre
-			(i < l-1 && rune(camel[i+1]) >= 'a')) { //next
+		if (i != 0 || i == l-1) && ( // head and tail
+			(i > 0 && rune(camel[i-1]) >= 'a') || // pre
+				(i < l-1 && rune(camel[i+1]) >= 'a')) { //next
 			b.WriteRune('_')
 		}
 		b.WriteRune(v + diff)

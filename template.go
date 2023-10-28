@@ -3,6 +3,7 @@ package table
 var default_template = `
   {{$columns := .Columns }}
   <table class = "{{.Class}}">
+     {{if not .Opts.HideHeader }}
      <thead>
      <tr class="bg-primary text-white">
      {{ range $k,$v := .Columns }}
@@ -12,6 +13,7 @@ var default_template = `
      {{end}}
      </tr>
      </thead>
+     {{end}}
      {{ range $krow,$row := .Data }}
       <tr>
             {{ $rrow := (tomap $row) }}
