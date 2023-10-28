@@ -1,6 +1,6 @@
 package table
 
-var default_template =`
+var default_template = `
   {{$columns := .Columns }}
   <table class = "{{.Class}}">
      <thead>
@@ -32,7 +32,9 @@ var default_template =`
     </tr>
     {{end}}
   </table>
+  {{if .Paginator}}
   {{.Paginator.Render}}
+  {{end}}
 `
 
 var default_pagination = `

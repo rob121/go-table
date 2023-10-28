@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -25,8 +26,12 @@ var FuncMap = template.FuncMap{
 	},
 	"tomap": func(from interface{}) map[string]interface{} {
 
-		out := structs.Map(from)
-		return out
+		if structs.IsStruct(from) {
+			out := structs.Map(from)
+			return out
+		} else {
+			return from.(map[string]interface{})
+		}
 	},
 	"parse": func(key string, cols []Column, row map[string]interface{}) template.HTML {
 
@@ -95,7 +100,24 @@ type Column struct {
 	Ordering string
 }
 
-// Query Builder
+// This is when you have a complex query and you want the same version for row count
+func (t *Table) QueryParser(sql string) (string, string) {
+
+	r, _ := regexp.Compile(`(?i)select\s+(.*?)\s*from\s+(.*?)\s*(where\s(.*?)\s*)?`)
+
+	matches := r.FindStringSubmatch(sql)
+
+	var sql2 string
+
+	if len(matches) > 0 {
+
+		sql2 = strings.Replace(sql, matches[1], " COUNT (*) as ct", 1)
+
+	}
+
+	return sql, sql2 //original
+}
+
 func (t *Table) QueryBuilder(columns []string, table string) *QueryBuilder {
 
 	t.Builder = &QueryBuilder{Columns: columns, Table: table}
