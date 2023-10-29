@@ -122,7 +122,7 @@ func (t *Table) QueryParser(sql string) (string, string) {
 
 	if len(matches) > 0 {
 
-		sql2 = strings.Replace(sql, matches[1], " COUNT (*) as ct", 1)
+		sql2 = strings.Replace(sql, matches[1], " COUNT(*) as ct", 1)
 
 	}
 
@@ -308,9 +308,9 @@ func ToSnakeCase(camel string) (snake string) {
 		// add underscore if last letter is capital letter
 		// add underscore when previous letter is lowercase
 		// add underscore when next letter is lowercase
-		if (i != 0 || i == l-1) && ( // head and tail
-			(i > 0 && rune(camel[i-1]) >= 'a') || // pre
-				(i < l-1 && rune(camel[i+1]) >= 'a')) { //next
+		if (i != 0 || i == l-1) && (          // head and tail
+		(i > 0 && rune(camel[i-1]) >= 'a') || // pre
+			(i < l-1 && rune(camel[i+1]) >= 'a')) { //next
 			b.WriteRune('_')
 		}
 		b.WriteRune(v + diff)
