@@ -126,7 +126,7 @@ func (t *Table) QueryParser(sql string) (string, string) {
 
 	}
 
-	return sql, sql2 //original
+	return sql2, sql //original
 }
 
 func (t *Table) QueryBuilder(columns []string, table string) *QueryBuilder {
