@@ -155,6 +155,9 @@ func (t *Table) QueryBuilder(columns []string, table string) *QueryBuilder {
 
 	t.Builder.Limit = perpage
 
+	t.Builder.OrderDir = t.Request.URL.Query().Get("order")
+	t.Builder.OrderColumn = t.Request.URL.Query().Get("order.column")
+
 	return t.Builder
 
 }
