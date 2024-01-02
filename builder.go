@@ -15,6 +15,8 @@ type QueryBuilder struct {
 	ArgsRaw string
 	Start   int
 	Limit   int
+	OrderColumn string
+	OrderDir string
 }
 
 func (b *QueryBuilder) Arg(column, operator, value interface{}) *QueryBuilder {
@@ -72,7 +74,14 @@ func (b *QueryBuilder) Fetch() (string, string) {
 		sql2_part = append(sql2_part, fmt.Sprintf("WHERE %s", b.ArgsRaw))
 	}
 
+	if len(b.OrderDir)>0 && len(b.OrderColumn)>0 {
+
+		sql2_part = append(sql2_part, fmt.Sprintf("ORDER BY %s %s", b.OrderColumn,b.OrderDir))
+
+	}
+
 	if b.Start >= 0 && b.Limit > 0 {
+
 		if QueryMode == "postgres" {
 
 			sql2_part = append(sql2_part, fmt.Sprintf("OFFSET %d LIMIT %d", b.Start, b.Limit))
