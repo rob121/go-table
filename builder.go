@@ -73,7 +73,15 @@ func (b *QueryBuilder) Fetch() (string, string) {
 	}
 
 	if b.Start >= 0 && b.Limit > 0 {
-		sql2_part = append(sql2_part, fmt.Sprintf("LIMIT %d,%d", b.Start, b.Limit))
+		if QueryMode == "postgres" {
+
+			sql2_part = append(sql2_part, fmt.Sprintf("OFFSET %d LIMIT %d", b.Start, b.Limit))
+
+		}else{
+
+			sql2_part = append(sql2_part, fmt.Sprintf("LIMIT %d,%d", b.Start, b.Limit))
+
+		}
 	}
 
 	return strings.Join(sql1_part, " "), strings.Join(sql2_part, " ")
