@@ -148,10 +148,11 @@ func (t *Table) QueryBuilder(columns []string, table string) *QueryBuilder {
 	}
 
 	if pg > 1 {
-		t.Builder.Start = pg * perpage
+		t.Builder.Start =  (pg - 1) * perpage
 	} else {
 		t.Builder.Start = 0
 	}
+
 
 	t.Builder.Limit = perpage
 
