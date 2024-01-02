@@ -133,8 +133,15 @@ func (t *Table) QueryBuilder(columns []string, table string) *QueryBuilder {
 
 	t.Builder = &QueryBuilder{Columns: columns, Table: table}
 
-	pg, _ := strconv.Atoi(t.Request.URL.Query().Get("page"))
-	perpage, _ := strconv.Atoi(t.Request.URL.Query().Get("perpage"))
+	pg := 0
+	perpage := 25
+
+	if t.Request !=nil {
+
+	pg, _ = strconv.Atoi(t.Request.URL.Query().Get("page"))
+	perpage, _ = strconv.Atoi(t.Request.URL.Query().Get("perpage"))
+
+	}
 
 	if perpage < 1 {
 		perpage = 25
