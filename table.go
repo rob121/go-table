@@ -229,14 +229,16 @@ func (t *Table) SetPaginator(total int, perpage_current ...int) *Paginator {
 
 }
 
-func (t *Table) SetTemplate(final_template string) (error) { 
+func TableTemplate(my_template string) { 
 
- var err error
+ default_template = my_template
 
- t.Template,err =  template.New("table").Funcs(FuncMap).Parse(final_template)
+}
 
- return err
+func PaginationTemplate(my_template string) { 
 
+ default_pagination = my_template
+ 
 }
 
 func (t *Table) Render() (string, error) {
