@@ -153,7 +153,6 @@ func (t *Table) QueryBuilder(columns []string, table string) *QueryBuilder {
 		t.Builder.Start = 0
 	}
 
-
 	t.Builder.Limit = perpage
 
 	t.Builder.OrderDir = t.Request.URL.Query().Get("order")
@@ -227,6 +226,16 @@ func (t *Table) SetPaginator(total int, perpage_current ...int) *Paginator {
 	t.Paginator.SetUrl(t.Url)
 
 	return t.Paginator
+
+}
+
+func (t *Table) SetTemplate(final_template string) (error) { 
+
+ var err error
+
+ t.Template,err =  template.New("table").Funcs(FuncMap).Parse(final_template)
+
+ return err
 
 }
 
