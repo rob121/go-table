@@ -290,7 +290,7 @@ func (t *Table) AddColumn(name string, id string, templ interface{}, order ...bo
 		}
 
 		ordering = UpdateUrl(t.Url, "order", key)
-		ordering = UpdateUrl(ordering, "order.column", id)
+		ordering = UpdateUrl(ordering, "order.column",  ToSnakeCase(id))
 
 	}
 
@@ -315,29 +315,38 @@ func (t *Table) AddColumn(name string, id string, templ interface{}, order ...bo
 	return t
 }
 
-func ToSnakeCase(camel string) (snake string) {
-	var b strings.Builder
-	diff := 'a' - 'A'
-	l := len(camel)
-	for i, v := range camel {
-		// A is 65, a is 97
-		if v >= 'a' {
-			b.WriteRune(v)
-			continue
-		}
-		// v is capital letter here
-		// irregard first letter
-		// add underscore if last letter is capital letter
-		// add underscore when previous letter is lowercase
-		// add underscore when next letter is lowercase
-		if (i != 0 || i == l-1) && (          // head and tail
-		(i > 0 && rune(camel[i-1]) >= 'a') || // pre
-			(i < l-1 && rune(camel[i+1]) >= 'a')) { //next
-			b.WriteRune('_')
-		}
-		b.WriteRune(v + diff)
+func ToSnakeCase(out string) (string) {
+	var parts []rune
+
+	spl := strings.Split(out, ".")
+
+	if len(spl) > 1 {
+		out = spl[1]
 	}
-	return b.String()
+
+	for k, r := range out {
+
+		if r >= 'A' && r <= 'Z' {
+			if k > 0 {
+				parts = append(parts, '_')
+			}
+			rr := unicode.ToLower(r)
+			parts = append(parts, rr)
+		} else {
+			parts = append(parts, r)
+		}
+
+	}
+
+	var out2 string
+
+	if len(spl) > 1 {
+		out2 = fmt.Sprintf("%s.%s", spl[0], string(parts))
+	} else {
+		out2 = fmt.Sprint(string(parts))
+	}
+
+	return out2
 }
 
 func ToInterface(input interface{}, output interface{}) error {
