@@ -290,7 +290,7 @@ func (t *Table) AddColumn(name string, id string, templ interface{}, order ...bo
 		}
 
 		ordering = UpdateUrl(t.Url, "order", key)
-		ordering = UpdateUrl(ordering, "order.column", ToSnakeCase(id))
+		ordering = UpdateUrl(ordering, "order.column", id)
 
 	}
 
