@@ -316,38 +316,28 @@ func (t *Table) AddColumn(name string, id string, templ interface{}, order ...bo
 	return t
 }
 
-func ToSnakeCase(out string) (string) {
-	var parts []rune
+func ToSnakeCase(str string) string {
+	// Replace spaces with underscores
+	str = strings.ReplaceAll(str, " ", "_")
 
-	spl := strings.Split(out, ".")
+	// Insert underscores before capital letters (excluding the first letter)
+	re := regexp.MustCompile(`([a-z0-9])([A-Z])`)
+	str = re.ReplaceAllString(str, "${1}_${2}")
 
-	if len(spl) > 1 {
-		out = spl[1]
-	}
+	// Convert the entire string to lowercase
+	return strings.ToLower(str)
+}
 
-	for k, r := range out {
+func ToSnakeCase(str string) (string) {
+	// Replace spaces with underscores
+	str = strings.ReplaceAll(str, " ", "_")
 
-		if r >= 'A' && r <= 'Z' {
-			if k > 0 {
-				parts = append(parts, '_')
-			}
-			rr := unicode.ToLower(r)
-			parts = append(parts, rr)
-		} else {
-			parts = append(parts, r)
-		}
+	// Insert underscores before capital letters (excluding the first letter)
+	re := regexp.MustCompile(`([a-z0-9])([A-Z])`)
+	str = re.ReplaceAllString(str, "${1}_${2}")
 
-	}
-
-	var out2 string
-
-	if len(spl) > 1 {
-		out2 = fmt.Sprintf("%s.%s", spl[0], string(parts))
-	} else {
-		out2 = fmt.Sprint(string(parts))
-	}
-
-	return out2
+	// Convert the entire string to lowercase
+	return strings.ToLower(str)
 }
 
 func ToInterface(input interface{}, output interface{}) error {
