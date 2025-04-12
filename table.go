@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
-	"unicode"
 	"strings"
 )
 
@@ -328,17 +327,6 @@ func ToSnakeCase(str string) string {
 	return strings.ToLower(str)
 }
 
-func ToSnakeCase(str string) (string) {
-	// Replace spaces with underscores
-	str = strings.ReplaceAll(str, " ", "_")
-
-	// Insert underscores before capital letters (excluding the first letter)
-	re := regexp.MustCompile(`([a-z0-9])([A-Z])`)
-	str = re.ReplaceAllString(str, "${1}_${2}")
-
-	// Convert the entire string to lowercase
-	return strings.ToLower(str)
-}
 
 func ToInterface(input interface{}, output interface{}) error {
 
